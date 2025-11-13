@@ -7,6 +7,10 @@ export default {
     "New mindmap board": "New mindmap board",
     "Untitled mindmap": "Untitled mindmap",
     "Open as markdown": "Open as markdown",
+    "File name": "File name",
+    "Enter the name for the new mindmap file": "Enter the name for the new mindmap file",
+    "Create": "Create",
+    "Cancel": "Cancel",
 
     //Execute.ts
     "Sub title":"Sub title",

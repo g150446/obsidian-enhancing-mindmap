@@ -119,6 +119,10 @@ var en = {
     "New mindmap board": "New mindmap board",
     "Untitled mindmap": "Untitled mindmap",
     "Open as markdown": "Open as markdown",
+    "File name": "File name",
+    "Enter the name for the new mindmap file": "Enter the name for the new mindmap file",
+    "Create": "Create",
+    "Cancel": "Cancel",
     //Execute.ts
     "Sub title": "Sub title",
     "Export to opml": "Export to opml",
@@ -39473,6 +39477,57 @@ class MindMapSettingsTab extends obsidian.PluginSettingTab {
     }
 }
 
+class FileNameInputModal extends obsidian.Modal {
+    constructor(app, title, onSubmit) {
+        super(app);
+        this.onSubmit = onSubmit;
+        this.title = title;
+    }
+    onOpen() {
+        const { contentEl, titleEl } = this;
+        titleEl.setText(this.title);
+        contentEl.empty();
+        let inputValue = t('Untitled mindmap');
+        new obsidian.Setting(contentEl)
+            .setName(t('File name'))
+            .setDesc(t('Enter the name for the new mindmap file'))
+            .addText((text) => {
+            text
+                .setPlaceholder(t('Untitled mindmap'))
+                .setValue(t('Untitled mindmap'))
+                .inputEl.focus();
+            text.inputEl.select();
+            text.onChange((value) => {
+                inputValue = value;
+            });
+            const onEnter = (evt) => {
+                if (evt.key === 'Enter') {
+                    evt.preventDefault();
+                    this.close();
+                    this.onSubmit(inputValue);
+                }
+            };
+            text.inputEl.addEventListener('keydown', onEnter);
+        });
+        new obsidian.Setting(contentEl)
+            .addButton((btn) => btn
+            .setButtonText(t('Create'))
+            .setCta()
+            .onClick(() => {
+            this.close();
+            this.onSubmit(inputValue);
+        }))
+            .addButton((btn) => btn
+            .setButtonText(t('Cancel'))
+            .onClick(() => {
+            this.close();
+        }));
+    }
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
 class MindMapPlugin extends obsidian.Plugin {
     constructor() {
         super(...arguments);
@@ -40525,10 +40580,26 @@ class MindMapPlugin extends obsidian.Plugin {
             const targetFolder = folder
                 ? folder
                 : this.app.fileManager.getNewFileParent(((_a = this.app.workspace.getActiveFile()) === null || _a === void 0 ? void 0 : _a.path) || "");
+            // Show modal for file name input
+            const modal = new FileNameInputModal(this.app, t('Create new mindmap'), (fileName) => {
+                if (!fileName || fileName.trim() === '') {
+                    fileName = t('Untitled mindmap');
+                }
+                // Remove .md extension if user added it
+                fileName = fileName.replace(/\.md$/, '');
+                this.createMindMapFile(targetFolder, fileName);
+            });
+            modal.open();
+        });
+    }
+    createMindMapFile(targetFolder, fileName) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
                 // @ts-ignore
-                const mindmap = yield this.app.fileManager.createNewMarkdownFile(targetFolder, `${t('Untitled mindmap')}`);
-                yield this.app.vault.modify(mindmap, basicFrontmatter);
+                const mindmap = yield this.app.fileManager.createNewMarkdownFile(targetFolder, fileName);
+                // Create content with frontmatter and heading using the file name
+                const content = basicFrontmatter + `# ${fileName}\n`;
+                yield this.app.vault.modify(mindmap, content);
                 setTimeout(() => __awaiter(this, void 0, void 0, function* () {
                     yield this.app.workspace.getLeaf().setViewState({
                         type: mindmapViewType,

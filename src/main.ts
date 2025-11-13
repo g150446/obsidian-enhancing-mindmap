@@ -4,7 +4,9 @@ import {
   TFile,
   TFolder,
   ViewState,
-  MarkdownView
+  MarkdownView,
+  Modal,
+  Setting
 } from 'obsidian';
 // import DEFAULT_SETTINGS from './setting'
 import { around } from 'monkey-around'
@@ -15,6 +17,73 @@ import { MindMapView, mindmapViewType } from "./MindMapView";
 import { frontMatterKey, basicFrontmatter } from './constants';
 import { t } from './lang/helpers'
 
+class FileNameInputModal extends Modal {
+  onSubmit: (fileName: string) => void;
+  title: string;
+
+  constructor(app: any, title: string, onSubmit: (fileName: string) => void) {
+    super(app);
+    this.onSubmit = onSubmit;
+    this.title = title;
+  }
+
+  onOpen() {
+    const { contentEl, titleEl } = this;
+
+    titleEl.setText(this.title);
+    contentEl.empty();
+
+    let inputValue = t('Untitled mindmap');
+
+    new Setting(contentEl)
+      .setName(t('File name'))
+      .setDesc(t('Enter the name for the new mindmap file'))
+      .addText((text) => {
+        text
+          .setPlaceholder(t('Untitled mindmap'))
+          .setValue(t('Untitled mindmap'))
+          .inputEl.focus();
+        text.inputEl.select();
+
+        text.onChange((value) => {
+          inputValue = value;
+        });
+
+        const onEnter = (evt: KeyboardEvent) => {
+          if (evt.key === 'Enter') {
+            evt.preventDefault();
+            this.close();
+            this.onSubmit(inputValue);
+          }
+        };
+
+        text.inputEl.addEventListener('keydown', onEnter);
+      });
+
+    new Setting(contentEl)
+      .addButton((btn) =>
+        btn
+          .setButtonText(t('Create'))
+          .setCta()
+          .onClick(() => {
+            this.close();
+            this.onSubmit(inputValue);
+          })
+      )
+      .addButton((btn) =>
+        btn
+          .setButtonText(t('Cancel'))
+          .onClick(() => {
+            this.close();
+          })
+      );
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
 
 export default class MindMapPlugin extends Plugin {
   settings: MindMapSettings;
@@ -1176,14 +1245,31 @@ export default class MindMapPlugin extends Plugin {
         this.app.workspace.getActiveFile()?.path || ""
       );
 
+    // Show modal for file name input
+    const modal = new FileNameInputModal(this.app, t('Create new mindmap'), (fileName: string) => {
+      if (!fileName || fileName.trim() === '') {
+        fileName = t('Untitled mindmap');
+      }
+      
+      // Remove .md extension if user added it
+      fileName = fileName.replace(/\.md$/, '');
+
+      this.createMindMapFile(targetFolder, fileName);
+    });
+    modal.open();
+  }
+
+  async createMindMapFile(targetFolder: TFolder, fileName: string) {
     try {
       // @ts-ignore
       const mindmap: TFile = await this.app.fileManager.createNewMarkdownFile(
         targetFolder,
-        `${t('Untitled mindmap')}`
+        fileName
       );
 
-      await this.app.vault.modify(mindmap, basicFrontmatter);
+      // Create content with frontmatter and heading using the file name
+      const content = basicFrontmatter + `# ${fileName}\n`;
+      await this.app.vault.modify(mindmap, content);
        setTimeout(async ()=>{
           await this.app.workspace.getLeaf().setViewState({
             type: mindmapViewType,
