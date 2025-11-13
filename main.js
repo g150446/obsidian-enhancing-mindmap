@@ -8773,7 +8773,7 @@ class MindMap {
         console.log("[Enhancing Mindmap] Focus OUT - isFocused set to false");
     }
     appKeydown(e) {
-        var _a;
+        var _a, _b;
         if (!this.isFocused) {
             console.log(`[Enhancing Mindmap] Keydown ignored - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}`);
             return; // Check if Mindmap is in focus or not
@@ -8825,6 +8825,36 @@ class MindMap {
                     console.log("[Enhancing Mindmap] Tab (keydown) - no node selected, nothing to do");
                 }
                 return; // Prevent further processing
+            }
+            // Enter - create sibling node when not in edit mode
+            if (keyCode == 13 || e.key == 'Enter') {
+                // Only handle if not in composition mode (Japanese input)
+                if (this.isComposing) {
+                    console.log("[Enhancing Mindmap] Enter key ignored - in composition mode");
+                    return; // Allow default behavior for composition
+                }
+                var node = this.selectNode;
+                console.log(`[Enhancing Mindmap] Enter key pressed - selectNode=${node ? 'found' : 'null'}, isEdit=${(_b = node === null || node === void 0 ? void 0 : node.data) === null || _b === void 0 ? void 0 : _b.isEdit}`);
+                // Only create sibling if not in edit mode
+                if (node && !node.data.isEdit) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("[Enhancing Mindmap] Enter key pressed - creating sibling node");
+                    if (!node.parent) {
+                        console.log("[Enhancing Mindmap] Enter - cannot create sibling of root node");
+                        return; // Cannot create sibling of root node
+                    }
+                    var newNode = node.mindmap.execute('addSiblingNode', {
+                        parent: node.parent
+                    });
+                    this._menuDom.style.display = 'none';
+                    // Move the new node below the previously selected one
+                    node.mindmap.moveNode(newNode, node, 'down', false);
+                    console.log("[Enhancing Mindmap] Enter - sibling node created");
+                    return; // Prevent further processing
+                }
+                // If in edit mode, let the contentEditable handler deal with it
+                // Don't prevent default here - let it bubble to contentEditable handler
             }
             // // Space
             // if (keyCode == 32) {
