@@ -64,7 +64,25 @@ The plug-in only support a limited markdown format
 
 ![test (2)](https://user-images.githubusercontent.com/18719494/124458786-fd1d9b00-ddbf-11eb-8dbc-eeefb5b7abf5.gif)
 
-## Manual installation
+## Installation
+
+### Quick Install (Recommended)
+
+For developers or users building from source, use the provided installation script:
+
+1. Clone this repository or download the source code
+2. Build the plugin: `npm install && npm run build`
+3. Run the installation script: `./install.sh`
+4. Enter your Obsidian vault path when prompted
+5. The script will remember your vault path for future installations
+6. Reload Obsidian and enable the plugin in Settings > Community plugins
+
+**Note:** The install script automatically:
+- Builds the plugin if `main.js` is missing
+- Creates necessary directories if they don't exist
+- Remembers your last vault path for convenience
+
+### Manual installation
 1. Download the latest release
 2. Extract the obsidian-enhancing-mindmap folder from the zip to your vault's plugins folder: <vault>/.obsidian/plugins/
 3. Note: On some machines the .obsidian folder may be hidden. On MacOS you should be able to press Command+Shift+Dot to show the folder in Finder.

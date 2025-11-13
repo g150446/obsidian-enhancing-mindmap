@@ -23,7 +23,7 @@ export default class MindMapPlugin extends Plugin {
   timeOut: any = null;
 
   async onload() {
-
+    console.log("[Enhancing Mindmap] Plugin loaded - FIXED VERSION with Component parameter in renderMarkdown");
     await this.loadSettings();
 
     this.addCommand({

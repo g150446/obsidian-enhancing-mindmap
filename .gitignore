@@ -15,3 +15,6 @@ main.js
 # obsidian
 data.json
 *.bak
+
+# install script cache
+.last_vault_path

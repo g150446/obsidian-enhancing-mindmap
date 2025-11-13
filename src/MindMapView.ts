@@ -378,6 +378,9 @@ export class MindMapView extends TextFileView implements HoverParent {
 
     this.mindmap = new MindMap(mindData, this.contentEl, this.plugin.settings);
     this.mindmap.colors = this.colors;
+    // Set view BEFORE init() so nodes can access it during initialization
+    this.mindmap.view = this;
+    
     if (this.firstInit) {
 
       setTimeout(() => {
@@ -393,7 +396,6 @@ export class MindMapView extends TextFileView implements HoverParent {
         }
         this.mindmap.init();
         this.mindmap.refresh();
-        this.mindmap.view = this;
         this.firstInit = false;
       }, 100);
     } else {
@@ -404,7 +406,6 @@ export class MindMapView extends TextFileView implements HoverParent {
       this.mindmap.path = view?.file.path;
       this.mindmap.init();
       this.mindmap.refresh();
-      this.mindmap.view = this;
     }
   }
 

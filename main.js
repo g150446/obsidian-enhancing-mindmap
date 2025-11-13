@@ -475,7 +475,8 @@ class Node$1 {
         if (this.data.text.length === 0) {
             this.data.text = "Sub title";
         }
-        obsidian.MarkdownRenderer.renderMarkdown(this.data.text, this.contentEl, this.mindmap.path || "", null).then(() => {
+        console.log("[Enhancing Mindmap] Using FIXED version - renderMarkdown with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
+        obsidian.MarkdownRenderer.renderMarkdown(this.data.text, this.contentEl, this.mindmap.path || "", this.mindmap.view).then(() => {
             this.data.mdText = this.contentEl.innerHTML;
             this.refreshBox();
             this.mindmap && this.mindmap.emit('initNode', {});
@@ -531,7 +532,8 @@ class Node$1 {
                             var md = fileData || '';
                         }
                         if (md) {
-                            obsidian.MarkdownRenderer.renderMarkdown(md, markdownPreview, this.mindmap.path || "", null).then(() => {
+                            console.log("[Enhancing Mindmap] FIXED: renderMarkdown for embedded markdown with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
+                            obsidian.MarkdownRenderer.renderMarkdown(md, markdownPreview, this.mindmap.path || "", this.mindmap.view).then(() => {
                                 // this.data.mdText = this.editDom.innerHTML;
                                 this.refreshBox();
                                 //this._delay();
@@ -811,7 +813,8 @@ class Node$1 {
         }
         this.data.text = text;
         this.contentEl.innerText = '';
-        obsidian.MarkdownRenderer.renderMarkdown(text, this.contentEl, this.mindmap.path || "", null).then(() => {
+        console.log("[Enhancing Mindmap] FIXED: renderMarkdown in setText with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
+        obsidian.MarkdownRenderer.renderMarkdown(text, this.contentEl, this.mindmap.path || "", this.mindmap.view).then(() => {
             this.data.mdText = this.contentEl.innerHTML;
             this.refreshBox();
             this._delay();
@@ -39180,6 +39183,8 @@ class MindMapView extends obsidian.TextFileView {
         // }
         this.mindmap = new MindMap(mindData, this.contentEl, this.plugin.settings);
         this.mindmap.colors = this.colors;
+        // Set view BEFORE init() so nodes can access it during initialization
+        this.mindmap.view = this;
         if (this.firstInit) {
             setTimeout(() => {
                 var leaf = this.leaf;
@@ -39193,7 +39198,6 @@ class MindMapView extends obsidian.TextFileView {
                 }
                 this.mindmap.init();
                 this.mindmap.refresh();
-                this.mindmap.view = this;
                 this.firstInit = false;
             }, 100);
         }
@@ -39204,7 +39208,6 @@ class MindMapView extends obsidian.TextFileView {
             this.mindmap.path = view === null || view === void 0 ? void 0 : view.file.path;
             this.mindmap.init();
             this.mindmap.refresh();
-            this.mindmap.view = this;
         }
     }
     onunload() {
@@ -39479,6 +39482,7 @@ class MindMapPlugin extends obsidian.Plugin {
     }
     onload() {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("[Enhancing Mindmap] Plugin loaded - FIXED VERSION with Component parameter in renderMarkdown");
             yield this.loadSettings();
             this.addCommand({
                 id: 'Create New MindMap',

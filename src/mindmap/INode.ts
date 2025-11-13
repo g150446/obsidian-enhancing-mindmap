@@ -116,7 +116,8 @@ export default class Node {
         if (this.data.text.length === 0){
             this.data.text = "Sub title";
         }
-        MarkdownRenderer.renderMarkdown( this.data.text ,this.contentEl,this.mindmap.path||"",null).then(()=>{
+        console.log("[Enhancing Mindmap] Using FIXED version - renderMarkdown with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
+        MarkdownRenderer.renderMarkdown( this.data.text ,this.contentEl,this.mindmap.path||"",this.mindmap.view).then(()=>{
             this.data.mdText = this.contentEl.innerHTML;
             this.refreshBox();
             this.mindmap&&this.mindmap.emit('initNode',{});
@@ -174,7 +175,8 @@ export default class Node {
                         }
 
                         if(md){
-                            MarkdownRenderer.renderMarkdown(md,markdownPreview,this.mindmap.path||"",null).then(()=>{
+                            console.log("[Enhancing Mindmap] FIXED: renderMarkdown for embedded markdown with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
+                            MarkdownRenderer.renderMarkdown(md,markdownPreview,this.mindmap.path||"",this.mindmap.view).then(()=>{
                                // this.data.mdText = this.editDom.innerHTML;
                                 this.refreshBox();
                                 //this._delay();
@@ -506,7 +508,8 @@ export default class Node {
         this.data.text = text;
         this.contentEl.innerText = '';
 
-        MarkdownRenderer.renderMarkdown(text,this.contentEl,this.mindmap.path||"",null).then(()=>{
+        console.log("[Enhancing Mindmap] FIXED: renderMarkdown in setText with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
+        MarkdownRenderer.renderMarkdown(text,this.contentEl,this.mindmap.path||"",this.mindmap.view).then(()=>{
             this.data.mdText = this.contentEl.innerHTML;
             this.refreshBox();
             this._delay();

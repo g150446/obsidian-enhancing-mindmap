@@ -9,6 +9,7 @@ NC='\033[0m' # No Color
 # Plugin name from manifest.json
 PLUGIN_NAME="obsidian-enhancing-mindmap"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CACHE_FILE="$SCRIPT_DIR/.last_vault_path"
 
 echo -e "${GREEN}Obsidian Enhancing Mindmap Plugin Installer${NC}"
 echo "=========================================="
@@ -27,9 +28,31 @@ if [ ! -f "$SCRIPT_DIR/main.js" ]; then
     echo ""
 fi
 
+# Read previous vault path from cache
+PREVIOUS_VAULT_PATH=""
+if [ -f "$CACHE_FILE" ]; then
+    PREVIOUS_VAULT_PATH=$(cat "$CACHE_FILE" | head -n 1)
+    # Validate that the cached path still exists
+    if [ ! -d "$PREVIOUS_VAULT_PATH" ]; then
+        PREVIOUS_VAULT_PATH=""
+    fi
+fi
+
 # Prompt for Obsidian vault path
-echo -e "${YELLOW}Please enter the path to your Obsidian vault:${NC}"
-read -p "Vault path: " VAULT_PATH
+if [ -n "$PREVIOUS_VAULT_PATH" ]; then
+    echo -e "${YELLOW}Please enter the path to your Obsidian vault:${NC}"
+    echo -e "${GREEN}(Previous: $PREVIOUS_VAULT_PATH)${NC}"
+    read -p "Vault path [Press Enter to use previous]: " VAULT_PATH
+    
+    # If user pressed Enter without typing anything, use previous path
+    if [ -z "$VAULT_PATH" ]; then
+        VAULT_PATH="$PREVIOUS_VAULT_PATH"
+        echo -e "${GREEN}Using previous vault path: $VAULT_PATH${NC}"
+    fi
+else
+    echo -e "${YELLOW}Please enter the path to your Obsidian vault:${NC}"
+    read -p "Vault path: " VAULT_PATH
+fi
 
 # Expand tilde and resolve path
 VAULT_PATH="${VAULT_PATH/#\~/$HOME}"
@@ -68,6 +91,9 @@ cp "$SCRIPT_DIR/styles.css" "$PLUGIN_DIR/" && echo "  ✓ styles.css"
 
 # Check if copy was successful
 if [ $? -eq 0 ]; then
+    # Save vault path to cache for next time
+    echo "$VAULT_PATH" > "$CACHE_FILE"
+    
     echo ""
     echo -e "${GREEN}✓ Plugin installed successfully!${NC}"
     echo ""
