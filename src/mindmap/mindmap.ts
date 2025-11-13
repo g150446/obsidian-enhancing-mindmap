@@ -484,6 +484,30 @@ export default class MindMap {
                 // Don't prevent default here - let it bubble to contentEditable handler
             }
 
+            // Delete/Backspace - delete selected node when not in edit mode
+            if (keyCode == 46 || keyCode == 8 || e.key == 'Delete' || e.key == 'Backspace') {
+                // Only handle if not in composition mode (Japanese input)
+                if (this.isComposing) {
+                    console.log("[Enhancing Mindmap] Delete key ignored - in composition mode");
+                    return; // Allow default behavior for composition
+                }
+                
+                var node = this.selectNode;
+                console.log(`[Enhancing Mindmap] Delete key pressed - selectNode=${node ? 'found' : 'null'}, isEdit=${node?.data?.isEdit}, isRoot=${node?.data?.isRoot}`);
+                
+                // Only delete if not in edit mode and not root node
+                if (node && !node.data.isRoot && !node.data.isEdit) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("[Enhancing Mindmap] Delete key pressed - deleting node");
+                    node.mindmap.execute("deleteNodeAndChild", { node });
+                    this._menuDom.style.display='none';
+                    console.log("[Enhancing Mindmap] Delete - node deleted");
+                    return; // Prevent further processing
+                }
+                // If in edit mode or root node, let default behavior handle it
+            }
+
             // // Space
             // if (keyCode == 32) {
             //     var node = this.selectNode;

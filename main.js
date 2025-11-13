@@ -8773,7 +8773,7 @@ class MindMap {
         console.log("[Enhancing Mindmap] Focus OUT - isFocused set to false");
     }
     appKeydown(e) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         if (!this.isFocused) {
             console.log(`[Enhancing Mindmap] Keydown ignored - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}`);
             return; // Check if Mindmap is in focus or not
@@ -8855,6 +8855,27 @@ class MindMap {
                 }
                 // If in edit mode, let the contentEditable handler deal with it
                 // Don't prevent default here - let it bubble to contentEditable handler
+            }
+            // Delete/Backspace - delete selected node when not in edit mode
+            if (keyCode == 46 || keyCode == 8 || e.key == 'Delete' || e.key == 'Backspace') {
+                // Only handle if not in composition mode (Japanese input)
+                if (this.isComposing) {
+                    console.log("[Enhancing Mindmap] Delete key ignored - in composition mode");
+                    return; // Allow default behavior for composition
+                }
+                var node = this.selectNode;
+                console.log(`[Enhancing Mindmap] Delete key pressed - selectNode=${node ? 'found' : 'null'}, isEdit=${(_c = node === null || node === void 0 ? void 0 : node.data) === null || _c === void 0 ? void 0 : _c.isEdit}, isRoot=${(_d = node === null || node === void 0 ? void 0 : node.data) === null || _d === void 0 ? void 0 : _d.isRoot}`);
+                // Only delete if not in edit mode and not root node
+                if (node && !node.data.isRoot && !node.data.isEdit) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("[Enhancing Mindmap] Delete key pressed - deleting node");
+                    node.mindmap.execute("deleteNodeAndChild", { node });
+                    this._menuDom.style.display = 'none';
+                    console.log("[Enhancing Mindmap] Delete - node deleted");
+                    return; // Prevent further processing
+                }
+                // If in edit mode or root node, let default behavior handle it
             }
             // // Space
             // if (keyCode == 32) {
