@@ -476,9 +476,8 @@ class Node$1 {
         this.containEl.appendChild(this._barDom);
     }
     parseText() {
-        if (this.data.text.length === 0) {
-            this.data.text = "Sub title";
-        }
+        // Allow empty text - user will type their own label when editing
+        // No longer setting default "Sub title" so new nodes start empty
         console.log("[Enhancing Mindmap] Using FIXED version - renderMarkdown with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
         obsidian.MarkdownRenderer.renderMarkdown(this.data.text, this.contentEl, this.mindmap.path || "", this.mindmap.view).then(() => {
             this.data.mdText = this.contentEl.innerHTML;
@@ -624,9 +623,8 @@ class Node$1 {
         this.mindmap.editNode = this;
         this.data.isEdit = true;
         keepLastIndex(this.contentEl);
-        if (this.contentEl.innerText == t('Sub title')) {
-            this.selectText();
-        }
+        // No longer auto-selecting "Sub title" since new nodes start with empty text
+        // User can immediately start typing their own label
         if (!this.containEl.classList.contains('mm-edit-node')) {
             this.containEl.classList.add('mm-edit-node');
         }
@@ -7838,11 +7836,38 @@ class AddNode extends Command {
         }
         this.node.refreshBox();
         this.refresh();
-        this.mind.clearSelectNode();
+        // Clear selection of previous node, but don't cancel the new node's edit mode
+        // Store reference to the new node before clearing
+        var newNode = this.node;
+        // Only clear if it's not our new node
+        if (this.mind.selectNode != newNode) {
+            if (this.mind.selectNode) {
+                this.mind.selectNode.unSelect();
+                this.mind.selectNode = null;
+            }
+        }
+        // Clear edit mode only if it's not our new node
+        if (this.mind.editNode && this.mind.editNode != newNode) {
+            if (this.mind.editNode.data.isEdit) {
+                this.mind.editNode.cancelEdit();
+            }
+            this.mind.editNode = null;
+        }
+        // Ensure the new node enters edit mode and stays in edit mode
+        // Use a slightly longer timeout to ensure DOM is ready
         setTimeout(() => {
-            this.node.select();
-            this.node.edit();
-        }, 0);
+            newNode.select();
+            newNode.edit();
+            // Make sure edit mode is maintained and focus is on the editable element
+            this.mind.editNode = newNode;
+            // Ensure focus stays on the contentEditable element
+            if (newNode.contentEl && newNode.data.isEdit) {
+                newNode.contentEl.focus();
+                // Move cursor to end of text (or beginning if empty)
+                keepLastIndex(newNode.contentEl);
+            }
+            console.log("[Enhancing Mindmap] New node edit mode started, editNode=", this.mind.editNode, "isEdit=", newNode.data.isEdit);
+        }, 50);
         return true; //exit with no error
     }
     undo() {
@@ -8117,7 +8142,7 @@ class Exec {
                 if (data) {
                     var d = {
                         id: uuid(),
-                        text: data.text || t('Sub title')
+                        text: data.text || '' // Start with empty text so user can type immediately
                     };
                     var parent = data.parent;
                     var node = new Node$1(d, parent.mindmap);
@@ -8461,6 +8486,9 @@ class MindMap {
         this.setAppSetting();
         containerEL.appendChild(this.appEl);
         this.containerEL = containerEL;
+        // Make container focusable so focus events work properly
+        this.containerEL.setAttribute('tabindex', '-1');
+        console.log("[Enhancing Mindmap] Container made focusable with tabindex=-1, fix applied: 2025-11-13");
         //layout direct
         this._indicateDom = document.createElement('div');
         this._indicateDom.classList.add('mm-node-layout-indicate');
@@ -8707,20 +8735,80 @@ class MindMap {
             if (this.containerEL.contains(evt.relatedTarget))
                 return;
             this.isFocused = true;
+            console.log("[Enhancing Mindmap] Focus IN - isFocused set to true");
         }, 100);
     }
     appFocusOut(evt) {
         if (this.containerEL.contains(evt.relatedTarget))
             return;
         this.isFocused = false;
+        console.log("[Enhancing Mindmap] Focus OUT - isFocused set to false");
     }
     appKeydown(e) {
-        if (!this.isFocused)
+        var _a;
+        if (!this.isFocused) {
+            console.log(`[Enhancing Mindmap] Keydown ignored - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}`);
             return; // Check if Mindmap is in focus or not
-        e.keyCode || e.which || e.charCode;
-        e.ctrlKey || e.metaKey;
-        e.shiftKey;
-        e.altKey;
+        }
+        console.log(`[Enhancing Mindmap] Keydown received - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}, ctrl=${e.ctrlKey}, alt=${e.altKey}, shift=${e.shiftKey}`);
+        var keyCode = e.keyCode || e.which || e.charCode;
+        var ctrlKey = e.ctrlKey || e.metaKey;
+        var shiftKey = e.shiftKey;
+        var altKey = e.altKey;
+        // if (ctrlKey) {                         // Shift -> Selecting
+        //     // ctrl -> selecting
+        //     this.selectingNodes = true;
+        // } else {
+        //     this.selectingNodes = false;
+        // }
+        if (!ctrlKey && !shiftKey && !altKey) { // No special key
+            // Tab / Insert - handle in keydown to prevent focus loss
+            if (keyCode == 9 || keyCode == 45 || e.key == 'Tab') {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("[Enhancing Mindmap] Tab key pressed (keydown) - creating child node");
+                var node = this.selectNode;
+                console.log(`[Enhancing Mindmap] Tab (keydown) - selectNode=${node ? 'found' : 'null'}, isEdit=${(_a = node === null || node === void 0 ? void 0 : node.data) === null || _a === void 0 ? void 0 : _a.isEdit}`);
+                if (node) {
+                    // If parent is in edit mode, save its text first
+                    if (node.data.isEdit) {
+                        node.cancelEdit();
+                        // Wait a bit for cancelEdit to complete, then create child
+                        setTimeout(() => {
+                            if (!node.isExpand) {
+                                node.expand();
+                            }
+                            node.mindmap.execute("addChildNode", { parent: node });
+                            this._menuDom.style.display = 'none';
+                            console.log("[Enhancing Mindmap] Tab (keydown) - child node created after parent edit saved");
+                        }, 50);
+                    }
+                    else {
+                        // Not editing - create child immediately
+                        if (!node.isExpand) {
+                            node.expand();
+                        }
+                        node.mindmap.execute("addChildNode", { parent: node });
+                        this._menuDom.style.display = 'none';
+                        console.log("[Enhancing Mindmap] Tab (keydown) - child node created");
+                    }
+                }
+                else {
+                    console.log("[Enhancing Mindmap] Tab (keydown) - no node selected, nothing to do");
+                }
+                return; // Prevent further processing
+            }
+            // // Space
+            // if (keyCode == 32) {
+            //     var node = this.selectNode;
+            //     if (node && !node.data.isEdit) {
+            //         e.preventDefault();
+            //         e.stopPropagation();
+            //         node.edit();
+            //         this._menuDom.style.display = 'none';
+            //     }
+            // }
+        }
         // Shift + F2 : Edit as space does
         // if (!ctrlKey && shiftKey && !altKey) {  // SHIFT key
         //     if (keyCode == 113) {
@@ -8748,8 +8836,11 @@ class MindMap {
         this.isComposing = false;
     }
     appKeyup(e) {
-        if (!this.isFocused)
+        if (!this.isFocused) {
+            console.log(`[Enhancing Mindmap] Keyup ignored - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}`);
             return; // Check if Mindmap is in focus or not
+        }
+        console.log(`[Enhancing Mindmap] Keyup received - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}, ctrl=${e.ctrlKey}, alt=${e.altKey}, shift=${e.shiftKey}`);
         var keyCode = e.keyCode || e.which || e.charCode;
         var ctrlKey = e.ctrlKey || e.metaKey;
         var shiftKey = e.shiftKey;
@@ -8798,27 +8889,8 @@ class MindMap {
             //     }
             //     //else: Deletion makes no sense
             // }
-            // Tab / Insert
-            // if (keyCode == 9 || keyCode == 45 || e.key == 'Tab') {
-            //     e.preventDefault();
-            //     e.stopPropagation();
-            //     var node = this.selectNode;
-            //     if(node) {
-            //         if (!node.data.isEdit) {// Not editing
-            //             if (!node.isExpand) {
-            //                 node.expand();
-            //             }
-            //             node.mindmap.execute("addChildNode", { parent: node });
-            //             this._menuDom.style.display='none';
-            //         } else{
-            //             // this.selectNode.unSelect();
-            //             this.clearSelectNode();
-            //             node.select();
-            //             node.mindmap.editNode=null;
-            //         }
-            //     }
-            //     //else: no node selected -> nothing to do
-            // }
+            // Tab / Insert - handled in appKeydown, not here
+            // Removed duplicate handler that was canceling edit mode
             // Escape
             if (keyCode == 27) {
                 e.preventDefault();
@@ -39202,6 +39274,13 @@ class MindMapView extends obsidian.TextFileView {
                 }
                 this.mindmap.init();
                 this.mindmap.refresh();
+                // Ensure container receives focus so keyboard shortcuts work
+                setTimeout(() => {
+                    if (this.mindmap && this.mindmap.containerEL) {
+                        this.mindmap.containerEL.focus();
+                        console.log("[Enhancing Mindmap] Container focused after first init");
+                    }
+                }, 150);
                 this.firstInit = false;
             }, 100);
         }
@@ -39212,6 +39291,13 @@ class MindMapView extends obsidian.TextFileView {
             this.mindmap.path = view === null || view === void 0 ? void 0 : view.file.path;
             this.mindmap.init();
             this.mindmap.refresh();
+            // Ensure container receives focus so keyboard shortcuts work
+            setTimeout(() => {
+                if (this.mindmap && this.mindmap.containerEL) {
+                    this.mindmap.containerEL.focus();
+                    console.log("[Enhancing Mindmap] Container focused after subsequent init");
+                }
+            }, 150);
         }
     }
     onunload() {
@@ -39538,6 +39624,7 @@ class MindMapPlugin extends obsidian.Plugin {
     onload() {
         return __awaiter(this, void 0, void 0, function* () {
             console.log("[Enhancing Mindmap] Plugin loaded - FIXED VERSION with Component parameter in renderMarkdown");
+            console.log("[Enhancing Mindmap] Keyboard shortcut fix applied: 2025-11-13 - Container made focusable with tabindex");
             yield this.loadSettings();
             this.addCommand({
                 id: 'Create New MindMap',
@@ -39609,11 +39696,15 @@ class MindMapPlugin extends obsidian.Plugin {
                     },
                 ],
                 callback: () => {
+                    console.log("[Enhancing Mindmap] Copy Node command triggered");
                     const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
+                    console.log(`[Enhancing Mindmap] Copy Node - mindmapView=${mindmapView ? 'found' : 'null'}`);
                     if (mindmapView) {
                         var mindmap = mindmapView.mindmap;
+                        console.log(`[Enhancing Mindmap] Copy Node - mindmap=${mindmap ? 'found' : 'null'}, isFocused=${mindmap === null || mindmap === void 0 ? void 0 : mindmap.isFocused}`);
                         navigator.clipboard.writeText('');
                         var node = mindmap.selectNode;
+                        console.log(`[Enhancing Mindmap] Copy Node - selectNode=${node ? 'found' : 'null'}`);
                         if (node) {
                             var text = mindmap.copyNode(node);
                             navigator.clipboard.writeText(text);
@@ -39632,11 +39723,15 @@ class MindMapPlugin extends obsidian.Plugin {
                     },
                 ],
                 callback: () => {
+                    console.log("[Enhancing Mindmap] Cut Node command triggered");
                     const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
+                    console.log(`[Enhancing Mindmap] Cut Node - mindmapView=${mindmapView ? 'found' : 'null'}`);
                     if (mindmapView) {
                         var mindmap = mindmapView.mindmap;
+                        console.log(`[Enhancing Mindmap] Cut Node - mindmap=${mindmap ? 'found' : 'null'}, isFocused=${mindmap === null || mindmap === void 0 ? void 0 : mindmap.isFocused}`);
                         navigator.clipboard.writeText('');
                         var node = mindmap.selectNode;
+                        console.log(`[Enhancing Mindmap] Cut Node - selectNode=${node ? 'found' : 'null'}`);
                         if (node) {
                             var text = mindmap.copyNode(node);
                             navigator.clipboard.writeText(text);

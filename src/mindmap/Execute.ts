@@ -39,7 +39,7 @@ export default class Exec{
                 if(data){
                     var d = {
                         id: uuid(),
-                        text: data.text || t('Sub title')
+                        text: data.text || ''  // Start with empty text so user can type immediately
                     }
                     var parent:INode = data.parent;
                     var node = new INode(d,parent.mindmap);

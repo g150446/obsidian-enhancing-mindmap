@@ -1,4 +1,4 @@
-import INode from './INode'
+import INode, {keepLastIndex} from './INode'
 import MindMap  from './mindmap';
 
 export abstract class Command {
@@ -40,11 +40,38 @@ export class AddNode extends Command {
         }
         this.node.refreshBox();
         this.refresh();
-        this.mind.clearSelectNode();
+        // Clear selection of previous node, but don't cancel the new node's edit mode
+        // Store reference to the new node before clearing
+        var newNode = this.node;
+        // Only clear if it's not our new node
+        if (this.mind.selectNode != newNode) {
+            if (this.mind.selectNode) {
+                this.mind.selectNode.unSelect();
+                this.mind.selectNode = null;
+            }
+        }
+        // Clear edit mode only if it's not our new node
+        if (this.mind.editNode && this.mind.editNode != newNode) {
+            if(this.mind.editNode.data.isEdit){
+                this.mind.editNode.cancelEdit();
+            }
+            this.mind.editNode = null;
+        }
+        // Ensure the new node enters edit mode and stays in edit mode
+        // Use a slightly longer timeout to ensure DOM is ready
         setTimeout(()=>{
-            this.node.select();
-            this.node.edit();
-        },0);
+            newNode.select();
+            newNode.edit();
+            // Make sure edit mode is maintained and focus is on the editable element
+            this.mind.editNode = newNode;
+            // Ensure focus stays on the contentEditable element
+            if (newNode.contentEl && newNode.data.isEdit) {
+                newNode.contentEl.focus();
+                // Move cursor to end of text (or beginning if empty)
+                keepLastIndex(newNode.contentEl);
+            }
+            console.log("[Enhancing Mindmap] New node edit mode started, editNode=", this.mind.editNode, "isEdit=", newNode.data.isEdit);
+        },50);
         return true; //exit with no error
     }
 

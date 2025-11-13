@@ -113,9 +113,8 @@ export default class Node {
     }
 
     parseText(){
-        if (this.data.text.length === 0){
-            this.data.text = "Sub title";
-        }
+        // Allow empty text - user will type their own label when editing
+        // No longer setting default "Sub title" so new nodes start empty
         console.log("[Enhancing Mindmap] Using FIXED version - renderMarkdown with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
         MarkdownRenderer.renderMarkdown( this.data.text ,this.contentEl,this.mindmap.path||"",this.mindmap.view).then(()=>{
             this.data.mdText = this.contentEl.innerHTML;
@@ -275,9 +274,8 @@ export default class Node {
         this.data.isEdit = true;
         keepLastIndex(this.contentEl);
 
-        if (this.contentEl.innerText == t('Sub title')) {
-            this.selectText();
-        }
+        // No longer auto-selecting "Sub title" since new nodes start with empty text
+        // User can immediately start typing their own label
 
         if(!this.containEl.classList.contains('mm-edit-node')){
             this.containEl.classList.add('mm-edit-node')

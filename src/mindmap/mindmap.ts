@@ -100,6 +100,9 @@ export default class MindMap {
         this.setAppSetting();
         containerEL.appendChild(this.appEl);
         this.containerEL = containerEL;
+        // Make container focusable so focus events work properly
+        this.containerEL.setAttribute('tabindex', '-1');
+        console.log("[Enhancing Mindmap] Container made focusable with tabindex=-1, fix applied: 2025-11-13");
 
 
         //layout direct
@@ -386,14 +389,20 @@ export default class MindMap {
         setTimeout(() => {
             if (this.containerEL.contains(evt.relatedTarget as Node)) return;
             this.isFocused = true;
+            console.log("[Enhancing Mindmap] Focus IN - isFocused set to true");
         }, 100);
     }
     appFocusOut(evt: FocusEvent){
         if (this.containerEL.contains(evt.relatedTarget as Node)) return;
         this.isFocused = false;
+        console.log("[Enhancing Mindmap] Focus OUT - isFocused set to false");
     }
     appKeydown(e: KeyboardEvent) {
-        if (!this.isFocused) return; // Check if Mindmap is in focus or not
+        if (!this.isFocused) {
+            console.log(`[Enhancing Mindmap] Keydown ignored - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}`);
+            return; // Check if Mindmap is in focus or not
+        }
+        console.log(`[Enhancing Mindmap] Keydown received - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}, ctrl=${e.ctrlKey}, alt=${e.altKey}, shift=${e.shiftKey}`);
         var keyCode = e.keyCode || e.which || e.charCode;
         var ctrlKey = e.ctrlKey || e.metaKey;
         var shiftKey = e.shiftKey;
@@ -407,12 +416,40 @@ export default class MindMap {
         // }
 
         if (!ctrlKey && !shiftKey && !altKey) { // No special key
-            // // tab
-            // // tab (OK) / Insert (OK)
-            // if (keyCode == 9 || keyCode == 45) {
-            //     e.preventDefault();
-            //     e.stopPropagation();
-            // }
+            // Tab / Insert - handle in keydown to prevent focus loss
+            if (keyCode == 9 || keyCode == 45 || e.key == 'Tab') {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("[Enhancing Mindmap] Tab key pressed (keydown) - creating child node");
+                var node = this.selectNode;
+                console.log(`[Enhancing Mindmap] Tab (keydown) - selectNode=${node ? 'found' : 'null'}, isEdit=${node?.data?.isEdit}`);
+                if(node) {
+                    // If parent is in edit mode, save its text first
+                    if (node.data.isEdit) {
+                        node.cancelEdit();
+                        // Wait a bit for cancelEdit to complete, then create child
+                        setTimeout(() => {
+                            if (!node.isExpand) {
+                                node.expand();
+                            }
+                            node.mindmap.execute("addChildNode", { parent: node });
+                            this._menuDom.style.display='none';
+                            console.log("[Enhancing Mindmap] Tab (keydown) - child node created after parent edit saved");
+                        }, 50);
+                    } else {
+                        // Not editing - create child immediately
+                        if (!node.isExpand) {
+                            node.expand();
+                        }
+                        node.mindmap.execute("addChildNode", { parent: node });
+                        this._menuDom.style.display='none';
+                        console.log("[Enhancing Mindmap] Tab (keydown) - child node created");
+                    }
+                } else {
+                    console.log("[Enhancing Mindmap] Tab (keydown) - no node selected, nothing to do");
+                }
+                return; // Prevent further processing
+            }
 
             // // Space
             // if (keyCode == 32) {
@@ -476,7 +513,11 @@ export default class MindMap {
      }
 
     appKeyup(e: KeyboardEvent) {
-        if (!this.isFocused) return; // Check if Mindmap is in focus or not
+        if (!this.isFocused) {
+            console.log(`[Enhancing Mindmap] Keyup ignored - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}`);
+            return; // Check if Mindmap is in focus or not
+        }
+        console.log(`[Enhancing Mindmap] Keyup received - isFocused=${this.isFocused}, key=${e.key}, keyCode=${e.keyCode}, ctrl=${e.ctrlKey}, alt=${e.altKey}, shift=${e.shiftKey}`);
         var keyCode = e.keyCode || e.which || e.charCode;
         var ctrlKey = e.ctrlKey || e.metaKey;
         var shiftKey = e.shiftKey;
@@ -531,27 +572,8 @@ export default class MindMap {
             // }
 
 
-            // Tab / Insert
-            // if (keyCode == 9 || keyCode == 45 || e.key == 'Tab') {
-            //     e.preventDefault();
-            //     e.stopPropagation();
-            //     var node = this.selectNode;
-            //     if(node) {
-            //         if (!node.data.isEdit) {// Not editing
-            //             if (!node.isExpand) {
-            //                 node.expand();
-            //             }
-            //             node.mindmap.execute("addChildNode", { parent: node });
-            //             this._menuDom.style.display='none';
-            //         } else{
-            //             // this.selectNode.unSelect();
-            //             this.clearSelectNode();
-            //             node.select();
-            //             node.mindmap.editNode=null;
-            //         }
-            //     }
-            //     //else: no node selected -> nothing to do
-            // }
+            // Tab / Insert - handled in appKeydown, not here
+            // Removed duplicate handler that was canceling edit mode
 
                 // Escape
             if (keyCode == 27) {

@@ -396,6 +396,13 @@ export class MindMapView extends TextFileView implements HoverParent {
         }
         this.mindmap.init();
         this.mindmap.refresh();
+        // Ensure container receives focus so keyboard shortcuts work
+        setTimeout(() => {
+          if (this.mindmap && this.mindmap.containerEL) {
+            this.mindmap.containerEL.focus();
+            console.log("[Enhancing Mindmap] Container focused after first init");
+          }
+        }, 150);
         this.firstInit = false;
       }, 100);
     } else {
@@ -406,6 +413,13 @@ export class MindMapView extends TextFileView implements HoverParent {
       this.mindmap.path = view?.file.path;
       this.mindmap.init();
       this.mindmap.refresh();
+      // Ensure container receives focus so keyboard shortcuts work
+      setTimeout(() => {
+        if (this.mindmap && this.mindmap.containerEL) {
+          this.mindmap.containerEL.focus();
+          console.log("[Enhancing Mindmap] Container focused after subsequent init");
+        }
+      }, 150);
     }
   }
 

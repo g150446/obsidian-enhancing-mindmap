@@ -93,6 +93,7 @@ export default class MindMapPlugin extends Plugin {
 
   async onload() {
     console.log("[Enhancing Mindmap] Plugin loaded - FIXED VERSION with Component parameter in renderMarkdown");
+    console.log("[Enhancing Mindmap] Keyboard shortcut fix applied: 2025-11-13 - Container made focusable with tabindex");
     await this.loadSettings();
 
     this.addCommand({
@@ -170,11 +171,15 @@ export default class MindMapPlugin extends Plugin {
         },
       ],
       callback: () => {
+        console.log("[Enhancing Mindmap] Copy Node command triggered");
         const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
+        console.log(`[Enhancing Mindmap] Copy Node - mindmapView=${mindmapView ? 'found' : 'null'}`);
         if(mindmapView){
           var mindmap = mindmapView.mindmap;
+          console.log(`[Enhancing Mindmap] Copy Node - mindmap=${mindmap ? 'found' : 'null'}, isFocused=${mindmap?.isFocused}`);
           navigator.clipboard.writeText('');
           var node = mindmap.selectNode;
+          console.log(`[Enhancing Mindmap] Copy Node - selectNode=${node ? 'found' : 'null'}`);
           if(node){
             var text = mindmap.copyNode(node);
             navigator.clipboard.writeText(text);
@@ -195,11 +200,15 @@ export default class MindMapPlugin extends Plugin {
         },
       ],
       callback: () => {
+        console.log("[Enhancing Mindmap] Cut Node command triggered");
         const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
+        console.log(`[Enhancing Mindmap] Cut Node - mindmapView=${mindmapView ? 'found' : 'null'}`);
         if(mindmapView){
           var mindmap = mindmapView.mindmap;
+          console.log(`[Enhancing Mindmap] Cut Node - mindmap=${mindmap ? 'found' : 'null'}, isFocused=${mindmap?.isFocused}`);
           navigator.clipboard.writeText('');
           var node = mindmap.selectNode;
+          console.log(`[Enhancing Mindmap] Cut Node - selectNode=${node ? 'found' : 'null'}`);
           if(node){
             var text = mindmap.copyNode(node);
             navigator.clipboard.writeText(text);
