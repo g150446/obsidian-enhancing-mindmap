@@ -628,6 +628,30 @@ class Node$1 {
         if (!this.containEl.classList.contains('mm-edit-node')) {
             this.containEl.classList.add('mm-edit-node');
         }
+        // Add Enter key handler for edit mode
+        this._enterKeyHandler = this._enterKeyHandler || ((e) => {
+            // Check if Enter key is pressed
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                // If in Japanese kanji henkan (composition) mode, allow default behavior
+                if (this.mindmap.isComposing) {
+                    return; // Allow default behavior to commit character
+                }
+                // If Shift+Enter, allow new line (default behavior)
+                if (e.shiftKey) {
+                    return; // Allow default behavior to create new line
+                }
+                // Otherwise, Enter should end edit mode
+                e.preventDefault();
+                e.stopPropagation();
+                this.cancelEdit();
+                // Select and focus the node after exiting edit mode
+                setTimeout(() => {
+                    this.select();
+                    this.containEl.focus();
+                }, 0);
+            }
+        });
+        this.contentEl.addEventListener('keydown', this._enterKeyHandler);
     }
     selectText() {
         var text = this.contentEl;
@@ -815,6 +839,10 @@ class Node$1 {
         }
         this.data.text = text;
         this.contentEl.innerText = '';
+        // Remove Enter key handler when exiting edit mode
+        if (this._enterKeyHandler) {
+            this.contentEl.removeEventListener('keydown', this._enterKeyHandler);
+        }
         console.log("[Enhancing Mindmap] FIXED: renderMarkdown in setText with Component:", this.mindmap.view ? "Component provided" : "Component missing!");
         obsidian.MarkdownRenderer.renderMarkdown(text, this.contentEl, this.mindmap.path || "", this.mindmap.view).then(() => {
             this.data.mdText = this.contentEl.innerHTML;

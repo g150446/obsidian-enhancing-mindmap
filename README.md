@@ -37,21 +37,35 @@ The plug-in only support a limited markdown format
 
 ## Short cuts
 
-| New Mind Map              | Ctrl/Cmd+P       |
+| Action                    | Shortcut         |
 | ------------------------- | ---------------- |
+| New Mind Map              | Ctrl/Cmd+P       |
 | New child node            | Tab              |
-| New brother node          | enter            |
+| New brother node          | Enter (when not editing) |
 | Delete node               | Delete           |
-| edit node                 | Space/dblclick node|
+| Edit node                 | Space/dblclick node |
 | Undo                      | Ctrl/Cmd+Z       |
 | Redo                      | Ctrl/Cmd+Y       |
-| Quit edit node            | Tab              |
+| **Edit Mode Shortcuts**   |                  |
+| End edit mode             | Enter            |
+| Create new line in node   | Shift+Enter      |
+| Quit edit mode (cancel)   | Escape           |
 | Expand node               | Ctrl/Cmd + /     |
 | Collapse node             | Ctrl/Cmd + /     |
-| Move node to another node  | Drag and drop node |
-| Tab node                 | Up/down/left/right |
-| Zoom in/out              | Ctrl/Cmd + mouse wheel|
-| mind map to center          | Ctrl/Cmd + E |
+| Move node to another node | Drag and drop node |
+| Navigate nodes            | Up/down/left/right |
+| Zoom in/out               | Ctrl/Cmd + mouse wheel |
+| Center mind map           | Ctrl/Cmd + E     |
+
+### Keyboard Shortcut Notes
+
+- **Tab**: Creates a new child node and automatically enters edit mode. The new node starts with empty text, allowing you to type immediately.
+- **Enter**: 
+  - When **not in edit mode**: Creates a new sibling node
+  - When **in edit mode**: Ends edit mode and saves the node (node remains selected and focused)
+  - During **Japanese kanji input**: Commits the character (normal behavior)
+- **Shift+Enter**: Creates a new line within the node text while editing (useful for multi-line labels)
+- **Escape**: Cancels edit mode and reverts to the previous text
 
 ## Features
 
