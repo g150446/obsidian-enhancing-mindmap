@@ -418,33 +418,28 @@ export default class MindMap {
         if (!ctrlKey && !shiftKey && !altKey) { // No special key
             // Tab / Insert - handle in keydown to prevent focus loss
             if (keyCode == 9 || keyCode == 45 || e.key == 'Tab') {
+                var node = this.selectNode;
+                console.log(`[Enhancing Mindmap] Tab key pressed (keydown) - selectNode=${node ? 'found' : 'null'}, isEdit=${node?.data?.isEdit}`);
+                
+                // If node is in edit mode, don't handle Tab - allow Japanese input to use it
+                if (node && node.data.isEdit) {
+                    console.log("[Enhancing Mindmap] Tab key ignored - node is in edit mode (allowing Japanese input)");
+                    return; // Allow default behavior for Japanese input composition
+                }
+                
+                // Only create child node when NOT in edit mode
                 e.preventDefault();
                 e.stopPropagation();
                 console.log("[Enhancing Mindmap] Tab key pressed (keydown) - creating child node");
-                var node = this.selectNode;
-                console.log(`[Enhancing Mindmap] Tab (keydown) - selectNode=${node ? 'found' : 'null'}, isEdit=${node?.data?.isEdit}`);
+                
                 if(node) {
-                    // If parent is in edit mode, save its text first
-                    if (node.data.isEdit) {
-                        node.cancelEdit();
-                        // Wait a bit for cancelEdit to complete, then create child
-                        setTimeout(() => {
-                            if (!node.isExpand) {
-                                node.expand();
-                            }
-                            node.mindmap.execute("addChildNode", { parent: node });
-                            this._menuDom.style.display='none';
-                            console.log("[Enhancing Mindmap] Tab (keydown) - child node created after parent edit saved");
-                        }, 50);
-                    } else {
-                        // Not editing - create child immediately
-                        if (!node.isExpand) {
-                            node.expand();
-                        }
-                        node.mindmap.execute("addChildNode", { parent: node });
-                        this._menuDom.style.display='none';
-                        console.log("[Enhancing Mindmap] Tab (keydown) - child node created");
+                    // Not editing - create child immediately
+                    if (!node.isExpand) {
+                        node.expand();
                     }
+                    node.mindmap.execute("addChildNode", { parent: node });
+                    this._menuDom.style.display='none';
+                    console.log("[Enhancing Mindmap] Tab (keydown) - child node created");
                 } else {
                     console.log("[Enhancing Mindmap] Tab (keydown) - no node selected, nothing to do");
                 }
