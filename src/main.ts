@@ -722,7 +722,7 @@ export default class MindMapPlugin extends Plugin {
       }
     });
 
-    // Alt + Dn
+    // Alt + Dn / +
     this.addCommand({
       id: 'Expand one level',
       name: `${t('Expand one level')}`,
@@ -730,6 +730,10 @@ export default class MindMapPlugin extends Plugin {
         {
           modifiers: ['Alt'],
           key: 'ArrowDown',
+        },
+        {
+          modifiers: [],
+          key: '+',
         },
       ],
       callback: () => {
@@ -771,7 +775,7 @@ export default class MindMapPlugin extends Plugin {
       }
     });
 
-    // Alt + Up
+    // Alt + Up / -
     this.addCommand({
       id: 'Collapse one level',
       name: `${t('Collapse one level')}`,
@@ -779,6 +783,10 @@ export default class MindMapPlugin extends Plugin {
         {
           modifiers: ['Alt'],
           key: 'ArrowUp',
+        },
+        {
+          modifiers: [],
+          key: '-',
         },
       ],
       callback: () => {
@@ -821,11 +829,15 @@ export default class MindMapPlugin extends Plugin {
         }
       });
 
-    // Ctrl + Shift + Space
+    // Alt + Shift + Space (and Mod + Shift + Space for compatibility)
     this.addCommand({
       id: 'Toggle expand/collapse node',
       name: `${t('Toggle expand/collapse node')}`,
       hotkeys: [
+        {
+          modifiers: ['Alt', 'Shift'],
+          key: 'Space',
+        },
         {
           modifiers: ['Mod', 'Shift'],
           key: 'Space',
@@ -1377,7 +1389,7 @@ export default class MindMapPlugin extends Plugin {
 
         //add markdown view menu  open as mind map view
 
-        if(leaf&&this.mindmapFileModes[leaf.id||file.path] == 'markdown'){
+        if(leaf&&this.mindmapFileModes[file.path] == 'markdown'){
              const cache = this.app.metadataCache.getFileCache(file);
              if(cache?.frontmatter && cache.frontmatter[frontMatterKey]){
                   menu.addItem((item) => {
@@ -1385,7 +1397,7 @@ export default class MindMapPlugin extends Plugin {
                    .setTitle(`${t('Open as mindmap board')}`)
                    .setIcon("document")
                    .onClick(() => {
-                     this.mindmapFileModes[leaf.id || file.path] = mindmapViewType;
+                      this.mindmapFileModes[file.path] = mindmapViewType;
                      this.setMindMapView(leaf);
                    });
                  }).addSeparator();

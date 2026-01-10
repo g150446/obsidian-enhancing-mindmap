@@ -183,6 +183,8 @@ var en = {
     'Join as citation with the node below': 'Join as citation with the node below',
     'Center mindmap view on the current node': 'Center mindmap view on the current node',
     'Center mindmap view': 'Center mindmap view',
+    'Zoom in': 'Zoom in',
+    'Zoom out': 'Zoom out',
     'Display the node\'s info in console': 'Display the node\'s info in console',
     "Export to html": "Export to html",
     "Export to PNG": "Export to PNG",
@@ -8868,16 +8870,17 @@ class MindMap {
                 }
                 // If in edit mode or root node, let default behavior handle it
             }
-            // // Space
-            // if (keyCode == 32) {
-            //     var node = this.selectNode;
-            //     if (node && !node.data.isEdit) {
-            //         e.preventDefault();
-            //         e.stopPropagation();
-            //         node.edit();
-            //         this._menuDom.style.display = 'none';
-            //     }
-            // }
+            // Space - Toggle expand/collapse
+            if (keyCode == 32 || e.key == ' ') {
+                var node = this.selectNode;
+                if (node && !node.data.isEdit) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._toggleExpandNode(node);
+                    this._menuDom.style.display = 'none';
+                    console.log("[Enhancing Mindmap] Space key - toggled expand/collapse for node");
+                }
+            }
         }
         // Shift + F2 : Edit as space does
         // if (!ctrlKey && shiftKey && !altKey) {  // SHIFT key
@@ -40265,7 +40268,7 @@ class MindMapPlugin extends obsidian.Plugin {
                     }
                 }
             });
-            // Alt + Dn
+            // Alt + Dn / +
             this.addCommand({
                 id: 'Expand one level',
                 name: `${t('Expand one level')}`,
@@ -40273,6 +40276,10 @@ class MindMapPlugin extends obsidian.Plugin {
                     {
                         modifiers: ['Alt'],
                         key: 'ArrowDown',
+                    },
+                    {
+                        modifiers: [],
+                        key: '+',
                     },
                 ],
                 callback: () => {
@@ -40311,7 +40318,7 @@ class MindMapPlugin extends obsidian.Plugin {
                     }
                 }
             });
-            // Alt + Up
+            // Alt + Up / -
             this.addCommand({
                 id: 'Collapse one level',
                 name: `${t('Collapse one level')}`,
@@ -40319,6 +40326,10 @@ class MindMapPlugin extends obsidian.Plugin {
                     {
                         modifiers: ['Alt'],
                         key: 'ArrowUp',
+                    },
+                    {
+                        modifiers: [],
+                        key: '-',
                     },
                 ],
                 callback: () => {
@@ -40358,11 +40369,15 @@ class MindMapPlugin extends obsidian.Plugin {
                     }
                 }
             });
-            // Ctrl + Shift + Space
+            // Alt + Shift + Space (and Mod + Shift + Space for compatibility)
             this.addCommand({
                 id: 'Toggle expand/collapse node',
                 name: `${t('Toggle expand/collapse node')}`,
                 hotkeys: [
+                    {
+                        modifiers: ['Alt', 'Shift'],
+                        key: 'Space',
+                    },
                     {
                         modifiers: ['Mod', 'Shift'],
                         key: 'Space',
@@ -40637,6 +40652,42 @@ class MindMapPlugin extends obsidian.Plugin {
                     }
                 }
             });
+            // Zoom in
+            this.addCommand({
+                id: 'Zoom in',
+                name: `${t('Zoom in')}`,
+                hotkeys: [
+                    {
+                        modifiers: ['Alt'],
+                        key: '=',
+                    },
+                ],
+                callback: () => {
+                    const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
+                    if (mindmapView) {
+                        var mindmap = mindmapView.mindmap;
+                        mindmap.setScale("up");
+                    }
+                }
+            });
+            // Zoom out
+            this.addCommand({
+                id: 'Zoom out',
+                name: `${t('Zoom out')}`,
+                hotkeys: [
+                    {
+                        modifiers: ['Alt'],
+                        key: '-',
+                    },
+                ],
+                callback: () => {
+                    const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
+                    if (mindmapView) {
+                        var mindmap = mindmapView.mindmap;
+                        mindmap.setScale("down");
+                    }
+                }
+            });
             this.addCommand({
                 id: 'Display the node\'s info in console',
                 name: `${t('Display the node\'s info in console')}`,
@@ -40824,7 +40875,7 @@ class MindMapPlugin extends obsidian.Plugin {
                 });
             }
             //add markdown view menu  open as mind map view
-            if (leaf && this.mindmapFileModes[leaf.id || file.path] == 'markdown') {
+            if (leaf && this.mindmapFileModes[file.path] == 'markdown') {
                 const cache = this.app.metadataCache.getFileCache(file);
                 if ((cache === null || cache === void 0 ? void 0 : cache.frontmatter) && cache.frontmatter[frontMatterKey]) {
                     menu.addItem((item) => {
@@ -40832,7 +40883,7 @@ class MindMapPlugin extends obsidian.Plugin {
                             .setTitle(`${t('Open as mindmap board')}`)
                             .setIcon("document")
                             .onClick(() => {
-                            this.mindmapFileModes[leaf.id || file.path] = mindmapViewType;
+                            this.mindmapFileModes[file.path] = mindmapViewType;
                             this.setMindMapView(leaf);
                         });
                     }).addSeparator();

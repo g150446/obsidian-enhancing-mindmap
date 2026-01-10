@@ -503,16 +503,17 @@ export default class MindMap {
                 // If in edit mode or root node, let default behavior handle it
             }
 
-            // // Space
-            // if (keyCode == 32) {
-            //     var node = this.selectNode;
-            //     if (node && !node.data.isEdit) {
-            //         e.preventDefault();
-            //         e.stopPropagation();
-            //         node.edit();
-            //         this._menuDom.style.display = 'none';
-            //     }
-            // }
+            // Space - Toggle expand/collapse
+            if (keyCode == 32 || e.key == ' ') {
+                var node = this.selectNode;
+                if (node && !node.data.isEdit) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._toggleExpandNode(node);
+                    this._menuDom.style.display = 'none';
+                    console.log("[Enhancing Mindmap] Space key - toggled expand/collapse for node");
+                }
+            }
 
 
         }

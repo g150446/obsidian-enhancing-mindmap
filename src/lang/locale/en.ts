@@ -79,8 +79,6 @@ export default {
     'Center mindmap view':'Center mindmap view',
     'Zoom in':'Zoom in',
     'Zoom out':'Zoom out',
-    'Zoom in':'Zoom in',
-    'Zoom out':'Zoom out',
     'Display the node\'s info in console':'Display the node\'s info in console',
 
     "Export to html":"Export to html",
