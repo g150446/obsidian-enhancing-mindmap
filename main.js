@@ -40318,32 +40318,6 @@ class MindMapPlugin extends obsidian.Plugin {
                     }
                 }
             });
-            // Alt + Up / -
-            this.addCommand({
-                id: 'Collapse one level',
-                name: `${t('Collapse one level')}`,
-                hotkeys: [
-                    {
-                        modifiers: ['Alt'],
-                        key: 'ArrowUp',
-                    },
-                    {
-                        modifiers: [],
-                        key: '-',
-                    },
-                ],
-                callback: () => {
-                    const mindmapView = this.app.workspace.getActiveViewOfType(MindMapView);
-                    if (mindmapView) {
-                        var mindmap = mindmapView.mindmap;
-                        if (mindmap.selectNode) {
-                            mindmap.setDisplayedLevel(mindmap.selectNode.getLevel() - 1);
-                            mindmap.refresh();
-                            mindmap.selectNode.parent.select();
-                        }
-                    }
-                }
-            });
             // Alt + PgUp:
             this.addCommand({
                 id: 'Collapse one level from the max. displayed level',
