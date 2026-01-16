@@ -9,7 +9,6 @@ NC='\033[0m' # No Color
 # Plugin name from manifest.json
 PLUGIN_NAME="obsidian-enhancing-mindmap"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CACHE_FILE="$SCRIPT_DIR/.last_vault_path"
 
 echo -e "${GREEN}Obsidian Enhancing Mindmap Plugin Installer${NC}"
 echo "=========================================="
@@ -31,13 +30,15 @@ fi
 # Detect OS
 OS=$(uname -s)
 
-# Auto-detect vault path on macOS
-AUTO_DETECTED_PATH=""
+# Auto-detect all vault paths on macOS
+VAULT_NAMES=()
+VAULT_PATHS=()
+VAULT_COUNT=0
 if [ "$OS" = "Darwin" ]; then
     OBSIDIAN_CONFIG="$HOME/Library/Application Support/obsidian/obsidian.json"
     if [ -f "$OBSIDIAN_CONFIG" ]; then
-        # Extract the path of the vault that is currently open (open: true)
-        AUTO_DETECTED_PATH=$(python3 -c "
+        # Extract all vaults with names and paths
+        VAULTS_JSON=$(python3 -c "
 import json
 import sys
 try:
@@ -45,49 +46,53 @@ try:
         data = json.load(f)
     vaults = data.get('vaults', {})
     for vault_id, vault_info in vaults.items():
-        if vault_info.get('open', False):
-            print(vault_info['path'])
-            sys.exit(0)
-    # If no open vault, use the first one
-    if vaults:
-        first_vault = next(iter(vaults.values()))
-        print(first_vault['path'])
-except:
-    pass
+        name = vault_info.get('path', '').split('/')[-1]
+        path = vault_info.get('path', '')
+        if path:
+            print(f'{name}|{path}')
+except Exception as e:
+    sys.exit(0)
 " 2>/dev/null)
-    fi
-fi
 
-# Read previous vault path from cache
-PREVIOUS_VAULT_PATH=""
-if [ -f "$CACHE_FILE" ]; then
-    PREVIOUS_VAULT_PATH=$(cat "$CACHE_FILE" | head -n 1)
-    # Validate that the cached path still exists
-    if [ ! -d "$PREVIOUS_VAULT_PATH" ]; then
-        PREVIOUS_VAULT_PATH=""
+        # Parse vaults into arrays
+        if [ -n "$VAULTS_JSON" ]; then
+            while IFS='|' read -r vault_name vault_path; do
+                if [ -n "$vault_name" ] && [ -n "$vault_path" ]; then
+                    VAULT_COUNT=$((VAULT_COUNT + 1))
+                    VAULT_NAMES[$VAULT_COUNT]="$vault_name"
+                    VAULT_PATHS[$VAULT_COUNT]="$vault_path"
+                fi
+            done <<< "$VAULTS_JSON"
+        fi
     fi
 fi
 
 # Prompt for Obsidian vault path
-if [ -n "$AUTO_DETECTED_PATH" ]; then
-    echo -e "${GREEN}Auto-detected vault path: $AUTO_DETECTED_PATH${NC}"
-    echo -e "${YELLOW}Please confirm or enter a different path:${NC}"
-    read -p "Vault path [Press Enter to use auto-detected]: " VAULT_PATH
-    if [ -z "$VAULT_PATH" ]; then
-        VAULT_PATH="$AUTO_DETECTED_PATH"
-        echo -e "${GREEN}Using auto-detected vault path: $VAULT_PATH${NC}"
-    fi
-elif [ -n "$PREVIOUS_VAULT_PATH" ]; then
-    echo -e "${YELLOW}Please enter the path to your Obsidian vault:${NC}"
-    echo -e "${GREEN}(Previous: $PREVIOUS_VAULT_PATH)${NC}"
-    read -p "Vault path [Press Enter to use previous]: " VAULT_PATH
+if [ $VAULT_COUNT -gt 0 ]; then
+    echo -e "${GREEN}Available Obsidian Vaults:${NC}"
+    echo ""
     
-    # If user pressed Enter without typing anything, use previous path
-    if [ -z "$VAULT_PATH" ]; then
-        VAULT_PATH="$PREVIOUS_VAULT_PATH"
-        echo -e "${GREEN}Using previous vault path: $VAULT_PATH${NC}"
+    i=1
+    while [ $i -le $VAULT_COUNT ]; do
+        printf "  ${GREEN}%d)${NC} ${YELLOW}%s${NC} (%s)\n" "$i" "${VAULT_NAMES[$i]}" "${VAULT_PATHS[$i]}"
+        i=$((i + 1))
+    done
+    
+    echo ""
+    echo -e "${YELLOW}Select vault number (1-$VAULT_COUNT) or enter custom path:${NC}"
+    read -p "Your selection: " USER_INPUT
+    
+    # Check if input is a number and within range
+    if [[ "$USER_INPUT" =~ ^[0-9]+$ ]] && [ "$USER_INPUT" -ge 1 ] && [ "$USER_INPUT" -le "$VAULT_COUNT" ]; then
+        VAULT_PATH="${VAULT_PATHS[$USER_INPUT]}"
+        echo -e "${GREEN}Selected vault: ${VAULT_NAMES[$USER_INPUT]}${NC}"
+    else
+        # Treat as custom path
+        VAULT_PATH="$USER_INPUT"
+        echo -e "${GREEN}Using custom path${NC}"
     fi
 else
+    echo -e "${YELLOW}No Obsidian vaults detected on your system.${NC}"
     echo -e "${YELLOW}Please enter the path to your Obsidian vault:${NC}"
     read -p "Vault path: " VAULT_PATH
 fi
@@ -129,9 +134,6 @@ cp "$SCRIPT_DIR/styles.css" "$PLUGIN_DIR/" && echo "  ✓ styles.css"
 
 # Check if copy was successful
 if [ $? -eq 0 ]; then
-    # Save vault path to cache for next time
-    echo "$VAULT_PATH" > "$CACHE_FILE"
-    
     echo ""
     echo -e "${GREEN}✓ Plugin installed successfully!${NC}"
     echo ""
